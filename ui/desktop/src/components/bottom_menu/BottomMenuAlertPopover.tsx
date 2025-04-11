@@ -25,6 +25,7 @@ export default function BottomMenuAlertPopover({ alerts }: AlertPopoverProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [hasShownInitial, setHasShownInitial] = React.useState(false);
   const [isHovered, setIsHovered] = React.useState(false);
+  const [wasAutoShown, setWasAutoShown] = React.useState(false);
   const previousAlertsRef = useRef<Alert[]>([]);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -40,6 +41,7 @@ export default function BottomMenuAlertPopover({ alerts }: AlertPopoverProps) {
     hideTimerRef.current = setTimeout(() => {
       console.log('Hide timer completed, closing popover');
       setIsOpen(false);
+      setWasAutoShown(false);
     }, duration);
   }, []);
 
@@ -59,6 +61,7 @@ export default function BottomMenuAlertPopover({ alerts }: AlertPopoverProps) {
       console.log('Auto-showing popover');
       setIsOpen(true);
       setHasShownInitial(true);
+      setWasAutoShown(true);
       // Start 3 second timer for auto-show
       startHideTimer(3000);
     }
@@ -66,17 +69,18 @@ export default function BottomMenuAlertPopover({ alerts }: AlertPopoverProps) {
 
   // Handle auto-hide based on hover state changes
   useEffect(() => {
-    if (!isHovered && isOpen) {
-      // Start 1 second timer when mouse leaves after hovering
+    if (!isHovered && isOpen && !wasAutoShown) {
+      // Only start 1 second timer for manual interactions
       startHideTimer(1000);
     }
-  }, [isHovered, isOpen, startHideTimer]);
+  }, [isHovered, isOpen, startHideTimer, wasAutoShown]);
 
   // Handle click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setWasAutoShown(false);
       }
     };
 
@@ -107,11 +111,13 @@ export default function BottomMenuAlertPopover({ alerts }: AlertPopoverProps) {
                 if (hideTimerRef.current) {
                   clearTimeout(hideTimerRef.current);
                 }
+                setWasAutoShown(false);
                 setIsOpen(!isOpen);
               }}
               onMouseEnter={() => {
                 setIsOpen(true);
                 setIsHovered(true);
+                setWasAutoShown(false);
                 if (hideTimerRef.current) {
                   clearTimeout(hideTimerRef.current);
                 }
@@ -168,7 +174,7 @@ export default function BottomMenuAlertPopover({ alerts }: AlertPopoverProps) {
                   <div className="flex items-center gap-2">
                     <div className="flex-shrink-0">{alertIcons[alert.type]}</div>
                     <div className="flex flex-col gap-2 flex-1">
-                      <span className="text-[10px] break-words whitespace-pre-line">
+                      <span className="text-[11px] break-words whitespace-pre-line">
                         {alert.message}
                       </span>
                       {alert.action && (
@@ -178,7 +184,7 @@ export default function BottomMenuAlertPopover({ alerts }: AlertPopoverProps) {
                             alert.action?.onClick();
                             setIsOpen(false);
                           }}
-                          className="text-[10px] text-left underline hover:opacity-80 cursor-pointer outline-none"
+                          className="text-[11px] text-left underline hover:opacity-80 cursor-pointer outline-none"
                         >
                           {alert.action.text}
                         </button>
