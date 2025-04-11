@@ -225,7 +225,7 @@ goose run --instructions plan.md
 goose run --recipe recipe.yaml -s
 
 #Load a custom recipe from this chat and drop into an interactive session with that starts with a prompt from Goose
-goose run --recipe recipe.yaml -interactive
+goose run --recipe recipe.yaml --interactive
 
 ```
 
