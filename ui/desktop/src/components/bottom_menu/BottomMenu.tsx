@@ -9,7 +9,6 @@ import type { View } from '../../App';
 import { bottomMenuPopoverEnabled, settingsV2Enabled } from '../../flags';
 import { BottomMenuModeSelection } from './BottomMenuModeSelection';
 import ModelsBottomBar from '../settings_v2/models/bottom_bar/ModelsBottomBar';
-import ToolCount from '../ToolCount';
 import { getTools } from '../../api';
 
 // Constants
@@ -166,7 +165,6 @@ export default function BottomMenu({
       {/* Right-side section with ToolCount and Model Selector together */}
       <div className="flex items-center mr-4 space-x-1">
         {/* Tool count */}
-        <ToolCount />
         {bottomMenuPopoverEnabled && <BottomMenuAlertPopover alerts={alerts} />}
         {/* Model Selector Dropdown */}
         {settingsV2Enabled ? (
