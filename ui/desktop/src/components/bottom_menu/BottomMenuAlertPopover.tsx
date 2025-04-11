@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { IoIosCloseCircle, IoIosWarning } from 'react-icons/io';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '../../utils';
@@ -24,12 +24,13 @@ interface AlertPopoverProps {
 export default function BottomMenuAlertPopover({ alerts }: AlertPopoverProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [hasShownInitial, setHasShownInitial] = React.useState(false);
+  const [isHovered, setIsHovered] = React.useState(false);
   const previousAlertsRef = useRef<Alert[]>([]);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const popoverRef = useRef<HTMLDivElement>(null);
 
   // Function to start the hide timer
-  const startHideTimer = (duration = 3000) => {
+  const startHideTimer = useCallback((duration = 3000) => {
     console.log('Starting hide timer');
     // Clear any existing timer
     if (hideTimerRef.current) {
@@ -40,35 +41,36 @@ export default function BottomMenuAlertPopover({ alerts }: AlertPopoverProps) {
       console.log('Hide timer completed, closing popover');
       setIsOpen(false);
     }, duration);
-  };
+  }, []);
 
   // Handle initial show and new alerts
   useEffect(() => {
     if (alerts.length === 0) return;
 
-    const hasNewAlerts = alerts.length > previousAlertsRef.current.length;
+    // Compare current and previous alerts for any changes
+    const hasChanges = alerts.some((alert, index) => {
+      const prevAlert = previousAlertsRef.current[index];
+      return !prevAlert || prevAlert.type !== alert.type || prevAlert.message !== alert.message;
+    });
+
     previousAlertsRef.current = alerts;
 
-    if (!hasShownInitial || hasNewAlerts) {
+    if (!hasShownInitial || hasChanges) {
       console.log('Auto-showing popover');
       setIsOpen(true);
       setHasShownInitial(true);
+      // Start 3 second timer for auto-show
+      startHideTimer(3000);
     }
-  }, [alerts, hasShownInitial]);
+  }, [alerts, hasShownInitial, startHideTimer]);
 
-  // Separate effect for auto-hide when opened
+  // Handle auto-hide based on hover state changes
   useEffect(() => {
-    if (isOpen) {
-      console.log('Popover opened, starting hide timer');
-      startHideTimer();
+    if (!isHovered && isOpen) {
+      // Start 1 second timer when mouse leaves after hovering
+      startHideTimer(1000);
     }
-
-    return () => {
-      if (hideTimerRef.current) {
-        clearTimeout(hideTimerRef.current);
-      }
-    };
-  }, [isOpen]);
+  }, [isHovered, isOpen, startHideTimer]);
 
   // Handle click outside
   useEffect(() => {
@@ -109,9 +111,13 @@ export default function BottomMenuAlertPopover({ alerts }: AlertPopoverProps) {
               }}
               onMouseEnter={() => {
                 setIsOpen(true);
+                setIsHovered(true);
                 if (hideTimerRef.current) {
                   clearTimeout(hideTimerRef.current);
                 }
+              }}
+              onMouseLeave={() => {
+                setIsHovered(false);
               }}
             >
               <TriggerIcon className={cn('h-5 w-5', triggerColor)} />
@@ -123,9 +129,13 @@ export default function BottomMenuAlertPopover({ alerts }: AlertPopoverProps) {
             <div
               className="absolute -right-2 h-6 w-8 top-full"
               onMouseEnter={() => {
+                setIsHovered(true);
                 if (hideTimerRef.current) {
                   clearTimeout(hideTimerRef.current);
                 }
+              }}
+              onMouseLeave={() => {
+                setIsHovered(false);
               }}
             />
           )}
@@ -136,11 +146,14 @@ export default function BottomMenuAlertPopover({ alerts }: AlertPopoverProps) {
             alignOffset={-100}
             sideOffset={5}
             onMouseEnter={() => {
+              setIsHovered(true);
               if (hideTimerRef.current) {
                 clearTimeout(hideTimerRef.current);
               }
             }}
-            onMouseLeave={() => startHideTimer(1000)}
+            onMouseLeave={() => {
+              setIsHovered(false);
+            }}
           >
             <div className="flex flex-col">
               {alerts.map((alert, index) => (
