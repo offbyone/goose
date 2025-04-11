@@ -10,6 +10,7 @@ import TabItem from '@theme/TabItem';
 A shared session in Goose is like a collaborative workspace where multiple people can work with the AI assistant together in real-time. Think of it similar to a shared Google Doc, but for AI assistance.
 
 ## Create a shared Agent
+When you create an Agent to be shared, you are creating a host Agent. When your host terminates, the shared Agents are disconnected and collaborators can no longer see activity in the host.
 <Tabs>
     <TabItem value="cli" label="Goose CLI" default>
         The Goose CLI can generate a "recipe" which encapsulates all of the components to be shared with another Goose user. To share an agent, first create a recipe file.
@@ -24,16 +25,13 @@ A shared session in Goose is like a collaborative workspace where multiple peopl
         Generating Recipe
         Saved recipe to .../block/goose/recipe.yaml
         ```
-        Send the file to the Goose CLI user that wants to start a shared session.  For more information about the `Recipe` prompt completion command, see [Recipe](/docs/guides/goose-cli-commands#recipe)
+        Send the file to the Goose CLI user that wants to start a shared session.  For more information about the `recipe` prompt completion command, see the [recipe](/docs/guides/goose-cli-commands#recipe) CLI prompt.
     </TabItem>
     <TabItem value="ui" label="Goose Desktop">
 
         To share a session at any time, click the three dots in the top-right corner of the application and select **Make Agent from this session** from the dropdown menu. 
 
-        Goose gathers the components to be shared and opens a dialog that provides an Agent URL to be provided to the Goose user who will share your session. In the following example, the user created an agent and will review the activities to be shared and remove them as needed. After the right set of activites is in the list, they send the URL to another Goose desktop user.
-
-        ![Start a shared Agent](../assets/guides/shared-agent-created-ui.png)
-
+        Goose gathers the components to be shared and opens a dialog that provides an Agent URL to be provided to the Goose user who will share your session. Send the URL to the people who are going to collaborate with you. Their browser will create a new shared Agent in Goose when it reads the URL in the address bar.
 
 
     </TabItem>
@@ -48,7 +46,7 @@ A shared session in Goose is like a collaborative workspace where multiple peopl
         ```sh
         goose run --<RECIPE_FILE_NAME> 
         ```
-        The Goose CLI loads the recipe and creates a session with all of the components shared in the original session. 
+        The Goose CLI loads the recipe and creates a session with all of the components shared in the original session. For  infomration about the Goose `run` command, see the [run](/docs/guides/goose-cli-commands#run-options) CLI command.
 
     </TabItem>
     <TabItem value="ui" label="Goose Desktop">
@@ -58,12 +56,66 @@ A shared session in Goose is like a collaborative workspace where multiple peopl
 
         The new Goose session shows a set of actions that you can take as clickable buttons. As shown in the following image, the shared Agent is shown as an action that summarizes the purpose of the shared Agent. To activate the agent, review the summary and then select the action.  
 
-        ![Start a shared Agent](../assets/guides/start-shared-agent-ui.png)
-
-
+  
     </TabItem>
 </Tabs>
 
+## Accessing conversation history in shared sessions
+When you join a shared session, you automatically get access to:
+* The full conversation history (chat messages) from when the session started
+* All tool outputs and results
+* Any files or content created during the session
+
+### How It Works
+When you click the shared link, you'll join the active session. The conversation history will automatically load in your Goose window. You'll see all messages and interactions in real-time and can scroll up to view earlier parts of the conversation.
+### Important Notes
+The history is synchronized live - you'll see new messages as they happen. You don't need to take any special steps to access the history. The conversation remains available as long as the session is active. Once the host ends the session, the shared access ends.
+
+### Troubleshooting
+If you're having trouble accessing the conversation history when joining a shared session, you might want to:
+* Make sure you're using the most recent version of Goose
+* Try refreshing your session
+* Check with the host to ensure the session is still active
+
+Remember that the shared session ends when the host closes it, so make sure to save any important information you need before the session ends.
+
+## Tool outputs in a shared session
+In a shared session, participants can see:
+* All conversation messages
+* Tool outputs and results
+* Files or content created during the session
+* Active extensions and their configurations
+### How tool outputs work in shared sessions
+When any participant uses a tool, all members can see:
+* The tool being called
+* The parameters used
+* The results/output of the tool
+
+These outputs appear in the conversation just like messages and they're synchronized in real-time for all participants.
+
+### Important Notes
+* Tool outputs are treated as part of the conversation history
+* All participants can see the results, even if they didn't initiate the tool use
+* The outputs remain visible as long as the session is active
+* Like other shared content, tool outputs are only available during the active session
+
+This means that when you're in a shared session, you have full visibility into all tool interactions and their results, making it effective for collaborative troubleshooting or working together on tasks that require tool use.
+
+## File access in shared sessions
+Files created during a session are meant to be accessible to all participants. However, a file that is created in one shared Agent instance is not created in parallel on the other instances. To give everyone access to the file, we suggest any of the following strategies:
+
+* **Ask the Host**: When a collaborator creates a file, ask them to:
+   1. Share the file's location or path
+   1. Confirm how they intend to share access to the file
+
+* **Use Shared Tools**: When files need to be shared:
+   1. Use collaborative tools like Google Drive (if the extension is available)
+   1. Share file contents directly in the conversation where possible
+   1. Consider using version control systems for code files
+
+* **Document Important Files**:
+   1. Keep track of important files created during the session
+   1. Save or copy relevant content before the session ends
 
 
 ## What gets shared?
