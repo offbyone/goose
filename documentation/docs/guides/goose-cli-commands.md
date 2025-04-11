@@ -266,10 +266,10 @@ goose recipe <COMMAND>
 
 ```bash
 # Validate a recipe file
-goose recipe validate
+goose recipe validate $FILE.yaml
 
 # Generate a deeplink for a recipe file
-goose recipe deeplink
+goose recipe deeplink $FILE.yaml
 
 # Print this message or the help for the given command
 goose recipe help
