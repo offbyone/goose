@@ -23,7 +23,7 @@ When you create an Agent to be shared, you are creating a host Agent. When your 
 
         ```sh
         Generating Recipe
-        Saved recipe to .../block/goose/recipe.yaml
+        Saved recipe to .../my-shared-project/goose/recipe.yaml
         ```
         Send the file to the Goose CLI user that wants to start a shared session.  For more information about the `recipe` prompt completion command, see the [recipe](/docs/guides/goose-cli-commands#recipe) CLI prompt.
     </TabItem>
