@@ -463,7 +463,7 @@ pub async fn cli() -> Result<()> {
                     }
                 }
                 (None, None, None) => {
-                    eprintln!("Error: Must provide either --instructions (-i), --text (-t), or --recipe (-r). Use -i - for stdin.");
+                    eprintln!("Error: Must provide either --instructions (-i), --text (-t), or --recipe. Use -i - for stdin.");
                     std::process::exit(1);
                 }
             };
@@ -486,9 +486,9 @@ pub async fn cli() -> Result<()> {
             )?;
 
             if interactive {
-                session.interactive(input_config.contents).await?;
+                let _ = session.interactive(input_config.contents).await;
             } else if let Some(contents) = input_config.contents {
-                session.headless(contents).await?;
+                let _ = session.headless(contents).await;
             } else {
                 eprintln!("Error: no text provided for prompt in headless mode");
                 std::process::exit(1);
