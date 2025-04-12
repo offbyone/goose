@@ -4,7 +4,6 @@ export enum AlertType {
 }
 
 export interface Alert {
-  id?: string;
   type: AlertType;
   message: string;
   action?: {

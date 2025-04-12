@@ -1,7 +1,18 @@
 import { useState, useCallback } from 'react';
 import { Alert, AlertType } from './types';
 
-export const useAlerts = () => {
+interface UseAlerts {
+  alerts: Alert[];
+  addAlert: (
+    type: AlertType,
+    message: string,
+    action?: { text: string; onClick: () => void }
+  ) => void;
+  removeAlert: (index: number) => void;
+  clearAlerts: () => void;
+}
+
+export const useAlerts = (): UseAlerts => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
 
   const addAlert = useCallback(

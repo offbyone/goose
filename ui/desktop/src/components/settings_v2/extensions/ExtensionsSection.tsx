@@ -5,6 +5,9 @@ import { GPSIcon } from '../../ui/icons';
 import { useConfig, FixedExtensionEntry } from '../../ConfigContext';
 import ExtensionList from './subcomponents/ExtensionList';
 import ExtensionModal from './modal/ExtensionModal';
+import { AlertBox, AlertType } from '../../alerts';
+import { useToolCount } from '../../alerts/useToolCount';
+import { SUGGESTED_MAX_TOOLS } from '../../alerts/limits';
 import {
   createExtensionConfig,
   ExtensionFormData,
@@ -24,6 +27,8 @@ interface ExtensionSectionProps {
 export default function ExtensionsSection({ deepLinkConfig, showEnvVars }: ExtensionSectionProps) {
   const { getExtensions, addExtension, removeExtension } = useConfig();
   const [extensions, setExtensions] = useState<FixedExtensionEntry[]>([]);
+  const enabledCount = extensions.filter((ext) => ext.enabled).length;
+  const toolCount = useToolCount(enabledCount);
   const [selectedExtension, setSelectedExtension] = useState<FixedExtensionEntry | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -144,6 +149,17 @@ export default function ExtensionsSection({ deepLinkConfig, showEnvVars }: Exten
           These extensions use the Model Context Protocol (MCP). They can expand Goose's
           capabilities using three main components: Prompts, Resources, and Tools.
         </p>
+        {/* todo: some extensions have 0 tool count like code search? */}
+        {toolCount !== null && toolCount > SUGGESTED_MAX_TOOLS && (
+          <div className="mb-4">
+            <AlertBox
+              alert={{
+                type: AlertType.Warning,
+                message: `Too many tools can degrade performance.\nTool count: ${toolCount} (recommend: ${SUGGESTED_MAX_TOOLS})`,
+              }}
+            />
+          </div>
+        )}
 
         <ExtensionList
           extensions={extensions}
