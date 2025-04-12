@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { getTools } from '../../api';
 
+const { clearTimeout } = window;
+
 export const useToolCount = (triggerRefetch?: unknown) => {
   const [toolCount, setToolCount] = useState<number | null>(null);
 
@@ -8,7 +10,7 @@ export const useToolCount = (triggerRefetch?: unknown) => {
     let retryCount = 0;
     const maxRetries = 5;
     const initialDelay = 1000;
-    let mounted = true;
+    let timeoutId: ReturnType<typeof setTimeout>;
 
     const fetchTools = async () => {
       try {
@@ -25,40 +27,35 @@ export const useToolCount = (triggerRefetch?: unknown) => {
                 `Got empty tool list, retrying (${retryCount}/${maxRetries}) in ${delay}ms...`
               );
               // Set the current count to 0
-              if (mounted) {
-                setToolCount(0);
-              }
-              setTimeout(fetchTools, delay);
+              setToolCount(0);
+              timeoutId = setTimeout(fetchTools, delay);
             } else {
               // Max retries reached, confirm zero tools
-              if (mounted) {
-                setToolCount(0);
-              }
+              setToolCount(0);
+              clearTimeout(timeoutId);
             }
           } else {
-            // We got tools, update the count
+            // We got tools, update the count and clear any pending retries
             console.log(`Got tool count: ${response.data.length} (after ${retryCount} retries)`);
-            if (mounted) {
-              setToolCount(response.data.length);
-            }
+            setToolCount(response.data.length);
+            clearTimeout(timeoutId);
           }
         } else {
-          if (mounted) {
-            setToolCount(0);
-          }
+          setToolCount(0);
+          clearTimeout(timeoutId);
         }
       } catch (err) {
         console.error('Error fetching tools:', err);
-        if (mounted) {
-          setToolCount(0);
-        }
+        setToolCount(0);
+        clearTimeout(timeoutId);
       }
     };
 
     fetchTools();
 
+    // Cleanup timeouts on unmount or when triggerRefetch changes
     return () => {
-      mounted = false;
+      clearTimeout(timeoutId);
     };
   }, [triggerRefetch]);
 

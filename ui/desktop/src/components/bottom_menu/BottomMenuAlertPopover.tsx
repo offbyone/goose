@@ -5,7 +5,6 @@ import { cn } from '../../utils';
 import { Alert, AlertType } from '../alerts';
 import { AlertBox } from '../alerts';
 
-//todo: clearTimeout is not available globally but setTimeout is on other files
 const { clearTimeout } = window;
 
 interface AlertPopoverProps {
