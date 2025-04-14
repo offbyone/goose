@@ -1,7 +1,7 @@
 use super::errors::ProviderError;
 use crate::message::Message;
 use crate::model::ModelConfig;
-use crate::providers::base::{ConfigKey, Provider, ProviderMetadata, ProviderUsage, Usage};
+use crate::providers::base::{ConfigKey, ModelInfo, Provider, ProviderMetadata, ProviderUsage, Usage};
 use crate::providers::formats::openai::{create_request, get_usage, response_to_message};
 use crate::providers::utils::get_model;
 use anyhow::Result;
@@ -105,7 +105,7 @@ impl Provider for GroqProvider {
             "Groq",
             "Fast inference with Groq hardware",
             GROQ_DEFAULT_MODEL,
-            GROQ_KNOWN_MODELS.iter().map(|&s| s.to_string()).collect(),
+            GROQ_KNOWN_MODELS.iter().map(|&s| ModelInfo { name: s.to_string(), context_limit: ModelConfig::new(s.to_string()).context_limit() }).collect(),
             GROQ_DOC_URL,
             vec![
                 ConfigKey::new("GROQ_API_KEY", true, true, None),

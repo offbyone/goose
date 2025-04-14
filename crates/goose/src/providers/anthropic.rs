@@ -5,7 +5,7 @@ use reqwest::{Client, StatusCode};
 use serde_json::Value;
 use std::time::Duration;
 
-use super::base::{ConfigKey, Provider, ProviderMetadata, ProviderUsage};
+use super::base::{ConfigKey, ModelInfo, Provider, ProviderMetadata, ProviderUsage};
 use super::errors::ProviderError;
 use super::formats::anthropic::{create_request, get_usage, response_to_message};
 use super::utils::{emit_debug_trace, get_model};
@@ -126,7 +126,10 @@ impl Provider for AnthropicProvider {
             ANTHROPIC_DEFAULT_MODEL,
             ANTHROPIC_KNOWN_MODELS
                 .iter()
-                .map(|&s| s.to_string())
+                .map(|&s| ModelInfo {
+                    name: s.to_string(),
+                    context_limit: ModelConfig::new(s.to_string()).context_limit(),
+                })
                 .collect(),
             ANTHROPIC_DOC_URL,
             vec![

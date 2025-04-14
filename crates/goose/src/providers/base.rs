@@ -7,6 +7,15 @@ use crate::model::ModelConfig;
 use mcp_core::tool::Tool;
 use utoipa::ToSchema;
 
+/// Information about a model's capabilities
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ModelInfo {
+    /// The name of the model
+    pub name: String,
+    /// The maximum context length this model supports
+    pub context_limit: usize,
+}
+
 /// Metadata about a provider's configuration requirements and capabilities
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ProviderMetadata {
@@ -18,9 +27,9 @@ pub struct ProviderMetadata {
     pub description: String,
     /// The default/recommended model for this provider
     pub default_model: String,
-    /// A list of currently known models
+    /// A list of currently known models with their capabilities
     /// TODO: eventually query the apis directly
-    pub known_models: Vec<String>,
+    pub known_models: Vec<ModelInfo>,
     /// Link to the docs where models can be found
     pub model_doc_link: String,
     /// Required configuration keys
@@ -33,7 +42,7 @@ impl ProviderMetadata {
         display_name: &str,
         description: &str,
         default_model: &str,
-        known_models: Vec<String>,
+        known_models: Vec<ModelInfo>,
         model_doc_link: &str,
         config_keys: Vec<ConfigKey>,
     ) -> Self {

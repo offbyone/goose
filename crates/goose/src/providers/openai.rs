@@ -5,7 +5,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::time::Duration;
 
-use super::base::{ConfigKey, Provider, ProviderMetadata, ProviderUsage, Usage};
+use super::base::{ConfigKey, ModelInfo, Provider, ProviderMetadata, ProviderUsage, Usage};
 use super::errors::ProviderError;
 use super::formats::openai::{create_request, get_usage, response_to_message};
 use super::utils::{emit_debug_trace, get_model, handle_response_openai_compat, ImageFormat};
@@ -121,7 +121,10 @@ impl Provider for OpenAiProvider {
             OPEN_AI_DEFAULT_MODEL,
             OPEN_AI_KNOWN_MODELS
                 .iter()
-                .map(|&s| s.to_string())
+                .map(|&s| ModelInfo {
+                    name: s.to_string(),
+                    context_limit: ModelConfig::new(s.to_string()).context_limit(),
+                })
                 .collect(),
             OPEN_AI_DOC_URL,
             vec![

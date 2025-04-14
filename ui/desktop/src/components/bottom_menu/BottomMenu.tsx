@@ -10,7 +10,9 @@ import type { View } from '../../App';
 import { bottomMenuPopoverEnabled, settingsV2Enabled } from '../../flags';
 import { BottomMenuModeSelection } from './BottomMenuModeSelection';
 import ModelsBottomBar from '../settings_v2/models/bottom_bar/ModelsBottomBar';
-import { MAX_TOKENS, SUGGESTED_MAX_TOOLS, WARNING_THRESHOLD } from '../alerts/limits';
+import { MAX_TOKENS, SUGGESTED_MAX_TOOLS } from '../alerts/limits';
+
+const WARNING_THRESHOLD = 0.8; // Show warning at 80% of max tokens
 
 export default function BottomMenu({
   hasMessages,

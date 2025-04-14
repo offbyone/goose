@@ -9,7 +9,7 @@ use url::Url;
 
 use crate::message::Message;
 use crate::model::ModelConfig;
-use crate::providers::base::{ConfigKey, Provider, ProviderMetadata, ProviderUsage};
+use crate::providers::base::{ConfigKey, ModelInfo, Provider, ProviderMetadata, ProviderUsage};
 
 use crate::providers::errors::ProviderError;
 use crate::providers::formats::gcpvertexai::{
@@ -435,7 +435,10 @@ impl Provider for GcpVertexAIProvider {
             GcpVertexAIModel::Gemini(GeminiVersion::Pro20Exp),
         ]
         .into_iter()
-        .map(|model| model.to_string())
+        .map(|model| ModelInfo {
+            name: model.to_string(),
+            context_limit: ModelConfig::new(model.to_string()).context_limit(),
+        })
         .collect();
 
         ProviderMetadata::new(
