@@ -221,11 +221,17 @@ Execute commands from an instruction file or stdin. Check out the [full guide](/
 ```bash
 goose run --instructions plan.md
 
-#Load a custom recipe from this chat and drop into an in interactive session
+#Load a recipe with a prompt that Goose executes and then exits  
+goose run --recipe recipe.yaml
+
+#Load a recipe from this chat and then stays in an interactive session
 goose run --recipe recipe.yaml -s
 
-#Load a custom recipe from this chat and drop into an interactive session with that starts with a prompt from Goose
+#Load a recipe containing a prompt which Goose executes and then drops into an interactive session
 goose run --recipe recipe.yaml --interactive
+
+#Generates an error: no text provided for prompt in headless mode
+goose run --recipe recipe_no_prompt.yaml
 
 ```
 

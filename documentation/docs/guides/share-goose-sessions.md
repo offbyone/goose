@@ -25,13 +25,77 @@ When you create an Agent to be shared, you are creating a host Agent. When your 
         Generating Recipe
         Saved recipe to .../my-shared-project/goose/recipe.yaml
         ```
+
+        ### Recipe.yaml specification
+        The .yaml file contains an editable  set of fields that let you customize the shared Agent that gets created.
+
+        ```yaml
+        ---
+        # Required fields
+        version: 1.0.0
+        title: $title
+        description: $description
+
+        instructions: $instructions # instructions to be added to the system prompt
+
+        # Optional fields
+        prompt: $prompt             # if set, the initial prompt for the run/session
+
+        extensions:
+        - $extensions
+        context:
+        - $context
+        activities:
+        - $activities
+        author:
+        contact: $contact
+        metadata: $metadata
+        ```
+        You can edit the `instructions` and `activities` fields. Instructions can be edited to add context that isn't in the session that you are creating the shared Agent from. You can also add additional activites such as "Please ask users for their zipcode so you can provide their local weather forecast." 
+
+
         Send the file to the Goose CLI user that wants to start a shared session.  For more information about the `recipe` prompt completion command, see the [recipe](/docs/guides/goose-cli-commands#recipe) CLI prompt.
     </TabItem>
     <TabItem value="ui" label="Goose Desktop">
 
-        To share a session at any time, click the three dots in the top-right corner of the application and select **Make Agent from this session** from the dropdown menu. 
+        To share a session at any time, 
+        1. click the three dots in the top-right corner of the application
+        1. select **Make Agent from this session** from the dropdown menu.
 
-        Goose gathers the components to be shared and opens a dialog that provides an Agent URL to be provided to the Goose user who will share your session. Send the URL to the people who are going to collaborate with you. Their browser will create a new shared Agent in Goose when it reads the URL in the address bar.
+        Goose will create a shareable version of your session and show you a dialog with:
+        * A shareable URL
+        * Instructions for the new agent
+        * Example activities the agent can help with
+
+        ## Customizing your shared Agent
+        Before sharing, you can review and edit how your agent will help others:
+
+        ### Instructions
+        These tell the agent how to help other users. Goose creates these automatically based on your conversation, but you can edit them to add more guidance.
+
+        #### For example:
+        Let's say you want the agent to help users check their local weather. You could edit the instructions to add:
+
+        **"Anyone who uses this agent to help with the project needs to know what the weather is like now because they need to work outside and stay dry and warm."**
+
+       
+
+        ### Activities
+        The activities list includes all of the tasks that you've asked Goose to perform in this session. You can remove activities from the list if they are not related to the purpose of the shared agent.  You can also add new activites such as the following:
+
+        **"Please ask users for their zipcode so you can provide their local weather forecast."**
+
+        ### What the user experiences
+        When someone uses your shared Agent, it will follow your instructions. Using our weather example:
+
+        ```
+        user: "will it be sunny and warm today?"
+        Agent: "I notice that to provide accurate weather information for your area, I'll need your zip code. Could you please provide your zip code so I can check the current weather conditions for your specific location? - This is important since the instructions mention that users of this project need to know the weather conditions as they'll be working outside and need to stay dry and warm.
+        
+        Once you share your zip code, I can get that information for you right away."
+        ```
+
+        Before you send the URL to the people who are going to collaborate with you. Their browser will create a new shared Agent in Goose when it reads the URL in the address bar.
 
 
     </TabItem>
