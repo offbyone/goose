@@ -271,37 +271,19 @@ export default function App() {
       return;
     }
 
-    // Guard against multiple initialization attempts
-    if (initAttemptedRef.current) {
-      console.log('Initialization already attempted, skipping...');
-      return;
-    }
-    initAttemptedRef.current = true;
-
-    console.log(`Initializing app with settings v2`);
-
     const urlParams = new URLSearchParams(window.location.search);
     const viewType = urlParams.get('view');
     const recipeConfig = window.appConfig.get('recipeConfig');
 
-    // Handle bot config extensions first
-    if (recipeConfig?.extensions?.length > 0 && viewType != 'recipeEditor') {
-      console.log('Found extensions in bot config:', recipeConfig.extensions);
-      enableRecipeConfigExtensionsV2(recipeConfig.extensions);
-    }
-
-    // If we have a specific view type in the URL, use that and skip provider detection
-    if (viewType) {
-      if (viewType === 'recipeEditor' && recipeConfig) {
-        console.log('Setting view to recipeEditor with config:', recipeConfig);
-        setView('recipeEditor', { config: recipeConfig });
-      } else {
-        setView(viewType as View);
-      }
-      return;
-    }
-
     const initializeApp = async () => {
+      // Guard against multiple initialization attempts
+      if (initAttemptedRef.current) {
+        return;
+      }
+      initAttemptedRef.current = true;
+
+      console.log(`Initializing app with settings v2`);
+
       try {
         // Initialize config first
         await initConfig();
@@ -310,6 +292,23 @@ export default function App() {
 
         const provider = (await read('GOOSE_PROVIDER', false)) ?? config.GOOSE_DEFAULT_PROVIDER;
         const model = (await read('GOOSE_MODEL', false)) ?? config.GOOSE_DEFAULT_MODEL;
+
+        // Handle bot config extensions first
+        if (recipeConfig?.extensions?.length > 0 && viewType != 'recipeEditor') {
+          console.log('Found extensions in bot config:', recipeConfig.extensions);
+          await enableRecipeConfigExtensionsV2(recipeConfig.extensions);
+        }
+
+        // If we have a specific view type in the URL, use that and skip provider detection
+        if (viewType) {
+          if (viewType === 'recipeEditor' && recipeConfig) {
+            console.log('Setting view to recipeEditor with config:', recipeConfig);
+            setView('recipeEditor', { config: recipeConfig });
+          } else {
+            setView(viewType as View);
+          }
+          return;
+        }
 
         if (provider && model) {
           setView('chat');
@@ -349,7 +348,8 @@ export default function App() {
       console.error('Unhandled error in initialization:', error);
       setFatalError(`${error instanceof Error ? error.message : 'Unknown error'}`);
     });
-  }, [read, getExtensions, addExtension, enableRecipeConfigExtensionsV2]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array since we only want this to run once
 
   const [isGoosehintsModalOpen, setIsGoosehintsModalOpen] = useState(false);
   const [isLoadingSession, setIsLoadingSession] = useState(false);
