@@ -13,8 +13,8 @@ import ModelsBottomBar from '../settings_v2/models/bottom_bar/ModelsBottomBar';
 import { useConfig } from '../ConfigContext';
 import { getCurrentModelAndProvider } from '../settings_v2/models/index';
 
-const TOKEN_WARNING_THRESHOLD = 0.8; // Show warning at 80% of max tokens
-const SUGGESTED_MAX_TOOLS = 1; // Low value for testing
+const TOKEN_WARNING_THRESHOLD = 0.8;
+const SUGGESTED_MAX_TOOLS = 32;
 
 export default function BottomMenu({
   hasMessages,
