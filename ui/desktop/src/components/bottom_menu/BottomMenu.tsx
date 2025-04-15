@@ -10,9 +10,11 @@ import type { View } from '../../App';
 import { bottomMenuPopoverEnabled, settingsV2Enabled } from '../../flags';
 import { BottomMenuModeSelection } from './BottomMenuModeSelection';
 import ModelsBottomBar from '../settings_v2/models/bottom_bar/ModelsBottomBar';
-import { MAX_TOKENS, SUGGESTED_MAX_TOOLS } from '../alerts/limits';
+import { useConfig } from '../ConfigContext';
+import { getCurrentModelAndProvider } from '../settings_v2/models/index';
 
-const WARNING_THRESHOLD = 0.8; // Show warning at 80% of max tokens
+const TOKEN_WARNING_THRESHOLD = 0.8; // Show warning at 80% of max tokens
+const SUGGESTED_MAX_TOOLS = 1; // Low value for testing
 
 export default function BottomMenu({
   hasMessages,
@@ -28,8 +30,35 @@ export default function BottomMenu({
   const { alerts, addAlert, clearAlerts } = useAlerts();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const toolCount = useToolCount();
+  const { getProviders, read } = useConfig();
+  const [tokenLimit, setTokenLimit] = useState<number | null>(null);
 
-  // Handle all alerts
+  // Load providers and get current model's token limit
+  useEffect(() => {
+    const loadProviderDetails = async () => {
+      try {
+        const providers = await getProviders(true);
+
+        // Get current model and provider
+        const { model, provider } = await getCurrentModelAndProvider({ readFromConfig: read });
+
+        // Find the provider details for the current provider
+        const currentProvider = providers.find((p) => p.name === provider);
+        if (currentProvider && currentProvider.metadata && currentProvider.metadata.known_models) {
+          // Find the model's token limit
+          const modelConfig = currentProvider.metadata.known_models.find((m) => m.name === model);
+          if (modelConfig && modelConfig.context_limit) {
+            setTokenLimit(modelConfig.context_limit);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading providers or token limit:', err);
+      }
+    };
+    loadProviderDetails();
+  }, [getProviders, read]);
+
+  // Handle tool count alerts
   useEffect(() => {
     if (!bottomMenuPopoverEnabled) {
       return;
@@ -37,17 +66,19 @@ export default function BottomMenu({
 
     clearAlerts();
 
-    // Add token alerts
-    if (numTokens >= MAX_TOKENS) {
-      addAlert(
-        AlertType.Error,
-        `Token limit reached (${numTokens.toLocaleString()}/${MAX_TOKENS.toLocaleString()})`
-      );
-    } else if (numTokens >= MAX_TOKENS * WARNING_THRESHOLD) {
-      addAlert(
-        AlertType.Warning,
-        `Approaching token limit (${numTokens.toLocaleString()}/${MAX_TOKENS.toLocaleString()})`
-      );
+    // Add token alerts if we have a token limit
+    if (tokenLimit && numTokens > 0) {
+      if (numTokens >= tokenLimit) {
+        addAlert(
+          AlertType.Error,
+          `Token limit reached (${numTokens.toLocaleString()}/${tokenLimit.toLocaleString()})`
+        );
+      } else if (numTokens >= tokenLimit * TOKEN_WARNING_THRESHOLD) {
+        addAlert(
+          AlertType.Warning,
+          `Approaching token limit (${numTokens.toLocaleString()}/${tokenLimit.toLocaleString()})`
+        );
+      }
     }
 
     // Add tool count alert if we have the data
@@ -63,7 +94,7 @@ export default function BottomMenu({
     }
     // We intentionally omit setView as it shouldn't trigger a re-render of alerts
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [numTokens, toolCount, addAlert, clearAlerts]);
+  }, [numTokens, toolCount, tokenLimit, addAlert, clearAlerts]);
 
   // Add effect to handle clicks outside
   useEffect(() => {
@@ -98,8 +129,6 @@ export default function BottomMenu({
       window.removeEventListener('keydown', handleEsc);
     };
   }, [isModelMenuOpen]);
-
-  // Removed the envModelProvider code that was checking for environment variables
 
   return (
     <div className="flex justify-between items-center text-textSubtle relative bg-bgSubtle border-t border-borderSubtle text-xs pl-4 h-[40px] pb-1 align-middle">
