@@ -14,7 +14,7 @@ import { useConfig } from '../ConfigContext';
 import { getCurrentModelAndProvider } from '../settings_v2/models/index';
 
 const TOKEN_WARNING_THRESHOLD = 0.8;
-const SUGGESTED_MAX_TOOLS = 32;
+const SUGGESTED_MAX_TOOLS = 25;
 
 export default function BottomMenu({
   hasMessages,
