@@ -188,64 +188,37 @@ export async function toggleExtension({
   addToConfig,
   toastOptions = {},
 }: ToggleExtensionProps) {
-  // disabled to enabled
-  if (toggle == 'toggleOn') {
-    try {
-      // add to agent with toast options
-      await addToAgent(extensionConfig, {
-        ...toastOptions,
-      });
-    } catch (error) {
-      console.error('Error adding extension to agent. Will try to toggle back off.');
-      try {
-        await toggleExtension({
-          toggle: 'toggleOff',
-          extensionConfig,
-          addToConfig,
-          toastOptions: { silent: true }, // otherwise we will see a toast for removing something that was never added
-        });
-      } catch (toggleError) {
-        console.error('Failed to toggle extension off after agent error:', toggleError);
-      }
-      throw error;
-    }
+  // Update config first for immediate UI feedback
+  const isEnabling = toggle === 'toggleOn';
 
-    // update the config
-    try {
-      await addToConfig(extensionConfig.name, extensionConfig, true);
-    } catch (error) {
-      console.error('Failed to update config after enabling extension:', error);
-      // remove from agent
+  try {
+    // Update config first - this gives faster UI feedback
+    await addToConfig(extensionConfig.name, extensionConfig, isEnabling);
+
+    // Then handle agent update
+    if (isEnabling) {
+      try {
+        await addToAgent(extensionConfig, {
+          ...toastOptions,
+        });
+      } catch (error) {
+        console.error('Error adding extension to agent. Rolling back config change.');
+        // Roll back config change
+        await addToConfig(extensionConfig.name, extensionConfig, false);
+        throw error;
+      }
+    } else {
       try {
         await removeFromAgent(extensionConfig.name, toastOptions);
-      } catch (removeError) {
-        console.error('Failed to remove extension from agent after config failure:', removeError);
+      } catch (error) {
+        // If removing from agent fails, we still keep it disabled in config
+        console.error('Error removing extension from agent', extensionConfig.name, error);
+        // Don't throw here - the extension is still properly disabled in config
       }
-      throw error;
     }
-  } else if (toggle == 'toggleOff') {
-    // enabled to disabled
-    let agentRemoveError = null;
-    try {
-      await removeFromAgent(extensionConfig.name, toastOptions);
-    } catch (error) {
-      // note there was an error, but attempt to remove from config anyway
-      console.error('Error removing extension from agent', extensionConfig.name, error);
-      agentRemoveError = error;
-    }
-
-    // update the config
-    try {
-      await addToConfig(extensionConfig.name, extensionConfig, false);
-    } catch (error) {
-      console.error('Error removing extension from config', extensionConfig.name, 'Error:', error);
-      throw error;
-    }
-
-    // If we had an error removing from agent but succeeded updating config, still throw the original error
-    if (agentRemoveError) {
-      throw agentRemoveError;
-    }
+  } catch (error) {
+    console.error(`Failed to ${isEnabling ? 'enable' : 'disable'} extension:`, error);
+    throw error;
   }
 }
 
