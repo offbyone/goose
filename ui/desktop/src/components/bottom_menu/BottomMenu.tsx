@@ -34,33 +34,39 @@ export default function BottomMenu({
   const [tokenLimit, setTokenLimit] = useState<number | null>(null);
 
   // Load providers and get current model's token limit
+  const loadProviderDetails = async () => {
+    try {
+      // Get current model and provider first to avoid unnecessary provider fetches
+      const { model, provider } = await getCurrentModelAndProvider({ readFromConfig: read });
+      if (!model || !provider) {
+        console.log('No model or provider found');
+        return;
+      }
+
+      const providers = await getProviders(true);
+
+      // Find the provider details for the current provider
+      const currentProvider = providers.find((p) => p.name === provider);
+      if (currentProvider?.metadata?.known_models) {
+        // Find the model's token limit
+        const modelConfig = currentProvider.metadata.known_models.find((m) => m.name === model);
+        if (modelConfig?.context_limit) {
+          setTokenLimit(modelConfig.context_limit);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading providers or token limit:', err);
+    }
+  };
+
+  // Initial load and refresh when model changes
   useEffect(() => {
     if (!bottomMenuPopoverEnabled) {
       return;
     }
-
-    const loadProviderDetails = async () => {
-      try {
-        const providers = await getProviders(true);
-
-        // Get current model and provider
-        const { model, provider } = await getCurrentModelAndProvider({ readFromConfig: read });
-
-        // Find the provider details for the current provider
-        const currentProvider = providers.find((p) => p.name === provider);
-        if (currentProvider && currentProvider.metadata && currentProvider.metadata.known_models) {
-          // Find the model's token limit
-          const modelConfig = currentProvider.metadata.known_models.find((m) => m.name === model);
-          if (modelConfig && modelConfig.context_limit) {
-            setTokenLimit(modelConfig.context_limit);
-          }
-        }
-      } catch (err) {
-        console.error('Error loading providers or token limit:', err);
-      }
-    };
     loadProviderDetails();
-  }, [getProviders, read]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentModel]);
 
   // Handle tool count alerts
   useEffect(() => {
