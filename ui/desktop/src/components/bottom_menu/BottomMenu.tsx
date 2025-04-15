@@ -35,6 +35,10 @@ export default function BottomMenu({
 
   // Load providers and get current model's token limit
   useEffect(() => {
+    if (!bottomMenuPopoverEnabled) {
+      return;
+    }
+
     const loadProviderDetails = async () => {
       try {
         const providers = await getProviders(true);
