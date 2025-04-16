@@ -170,7 +170,11 @@ pub fn get_confirmation_message(request_id: &str, tool_call: ToolCall) -> (Princ
                     .arguments
                     .get("extension_names")
                     .and_then(|v| v.as_array())
-                    .map(|arr| arr.iter().map(|v| v.as_str().unwrap_or("").to_string()).collect::<Vec<String>>())
+                    .map(|arr| {
+                        arr.iter()
+                            .map(|v| v.as_str().unwrap_or("").to_string())
+                            .collect::<Vec<String>>()
+                    })
                     .unwrap_or_default(),
                 tool_call.name.clone(),
             ),

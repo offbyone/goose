@@ -208,13 +208,15 @@ impl Agent {
         for extension_name in &extension_names {
             match ExtensionConfigManager::get_config_by_name(extension_name) {
                 Ok(Some(config)) => configs.push(config),
-                Ok(None) => return (
-                    request_id,
-                    Err(ToolError::ExecutionError(format!(
+                Ok(None) => {
+                    return (
+                        request_id,
+                        Err(ToolError::ExecutionError(format!(
                         "Extension '{}' not found. Please check the extension name and try again.",
                         extension_name
                     ))),
-                ),
+                    )
+                }
                 Err(e) => {
                     return (
                         request_id,
