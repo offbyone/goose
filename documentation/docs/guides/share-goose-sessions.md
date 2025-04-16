@@ -1,16 +1,37 @@
 ---
 sidebar_position: 5
-title: Making Shared Goose Agents
-sidebar_label: Share Sessions
+title: Sharing a Goose Agent
+sidebar_label: Share Goose Agents
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 
-A shared session in Goose is like a collaborative workspace where multiple people can work with the AI assistant together in real-time. Think of it similar to a shared Google Doc, but for AI assistance.
+A shared Agent in Goose is like a collaborative workspace where multiple people can work with the AI assistant together in real-time. Think of it similar to a shared Google Doc, but for AI assistance.
 
 ## Create a shared Agent
 When you create an Agent to be shared, you are creating a host Agent. When your host terminates, the shared Agents are disconnected and collaborators can no longer see activity in the host.
+
+### Agent setup instructions
+When you share your Goose Agent setup (either through the command line or desktop app), you'll get a chance to review and edit the setup instructions. These instructions come from your current session, but they might need some extra details to work well for others.
+
+Here's an example: Let's say you were working with Goose to make technical writing easier to understand. In this case, you should add a note like this to your instructions:
+
+"I asked Goose to make this paragraph easier for high school students to read:
+
+The Square Developer platform provides payment APIs and SDKs to add Square payments to your application. Whether buyers are paying on Square hardware or online, you can charge for a simple currency amount or a more complex order using Square-supported payment methods."
+ 
+This tells the new shared Agent (or new local session) that you don't want just any technical writing to be easier to understand, but the specific technical paragraph that you provided in the instructions. 
+
+### Agent setup activities
+When you work with Goose, it keeps track of everything you do together. Before sharing your setup with others, you should review this list of activities. Think of it like cleaning up your workspace before inviting colleagues over:
+
+* Look at the list of activities when creating your shared setup
+* Pick only the activities that matter for your project
+* Remove any activities that aren't relevant for your teammates
+
+For example: If you used Goose for both writing documentation and analyzing data, but only want to share the writing part, you can remove the data analysis activities.
+
 <Tabs>
     <TabItem value="cli" label="Goose CLI" default>
         To create a shared Agent using the CLI, you need a recipe. Think of a Goose "recipe" like a blueprint - it contains the instructions to recreate your agent for someone else. Here's what you need to know:
@@ -64,15 +85,15 @@ When you create an Agent to be shared, you are creating a host Agent. When your 
         You can edit the `instructions` and `activities` fields. Instructions can be edited to add context that isn't in the session that you are creating the shared Agent from. You can also add additional activites such as "Please ask users for their zipcode so you can provide their local weather forecast." 
 
 
-        Send the file to the Goose CLI user that wants to start a shared session.  For more information about the `recipe` prompt completion command, see the [recipe](/docs/guides/goose-cli-commands#recipe) CLI prompt.
+        Send the file to the Goose CLI user that wants to start a shared Agent.  For more information about the `recipe` prompt completion command, see the [recipe](/docs/guides/goose-cli-commands#recipe) CLI prompt.
     </TabItem>
     <TabItem value="ui" label="Goose Desktop">
 
-        To share a session at any time, 
+        To share an Agent at any time, 
         1. click the three dots in the top-right corner of the application
         1. select **Make Agent from this session** from the dropdown menu.
 
-        Goose will create a shareable version of your session and show you a dialog with:
+        Goose will create a shareable version of your Agent and show you a dialog with:
         * A shareable URL
         * Instructions for the new agent
         * Example activities the agent can help with
@@ -121,6 +142,7 @@ When you create an Agent to be shared, you are creating a host Agent. When your 
         goose run --<RECIPE_FILE_NAME> 
         ```
         The Goose CLI loads the recipe and creates a session with all of the components shared in the original session. For  infomration about the Goose `run` command, see the [run](/docs/guides/goose-cli-commands#run-options) CLI command.
+
 
     </TabItem>
     <TabItem value="ui" label="Goose Desktop">
