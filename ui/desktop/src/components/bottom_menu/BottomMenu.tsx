@@ -33,8 +33,11 @@ export default function BottomMenu({
   const { getProviders, read } = useConfig();
   const [tokenLimit, setTokenLimit] = useState<number | null>(null);
 
+  console.log('bottomMenuPopoverEnabled: ', bottomMenuPopoverEnabled);
+
   // Load providers and get current model's token limit
   const loadProviderDetails = async () => {
+    console.log('Loading provider details from bottom menu...');
     try {
       // Get current model and provider first to avoid unnecessary provider fetches
       const { model, provider } = await getCurrentModelAndProvider({ readFromConfig: read });
@@ -53,7 +56,7 @@ export default function BottomMenu({
         if (modelConfig?.context_limit) {
           console.log('Model token limit: ', modelConfig.context_limit);
           // setTokenLimit(modelConfig.context_limit);
-          setTokenLimit(2000);
+          setTokenLimit(2);
         }
       }
     } catch (err) {
