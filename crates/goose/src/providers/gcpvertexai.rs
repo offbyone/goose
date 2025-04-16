@@ -585,12 +585,9 @@ mod tests {
     #[test]
     fn test_provider_metadata() {
         let metadata = GcpVertexAIProvider::metadata();
-        assert!(metadata
-            .known_models
-            .contains(&"claude-3-5-sonnet-v2@20241022".to_string()));
-        assert!(metadata
-            .known_models
-            .contains(&"gemini-1.5-pro-002".to_string()));
+        let model_names: Vec<String> = metadata.known_models.iter().map(|m| m.name.clone()).collect();
+        assert!(model_names.contains(&"claude-3-5-sonnet-v2@20241022".to_string()));
+        assert!(model_names.contains(&"gemini-1.5-pro-002".to_string()));
         // Should contain the original 2 config keys plus 4 new retry-related ones
         assert_eq!(metadata.config_keys.len(), 6);
     }
