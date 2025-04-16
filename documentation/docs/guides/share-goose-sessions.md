@@ -15,13 +15,12 @@ When you create an Agent to be shared, you are creating a host Agent. When your 
 ### Agent setup instructions
 When you share your Goose Agent setup (either through the command line or desktop app), you'll get a chance to review and edit the setup instructions. These instructions come from your current session, but they might need some extra details to work well for others.
 
-Here's an example: Let's say you were working with Goose to make technical writing easier to understand. In this case, you should add a note like this to your instructions:
+Here's an example: Let's say you were working with Goose to make debug a new application and you need help with the debug logs. In this case, you should add a note like this to your instructions:
 
-"I asked Goose to make this paragraph easier for high school students to read:
+"I asked Goose to review the debug logs from this application: https://github.com/square/connect-api-examples/tree/master/connect-examples/v2/node_orders-payments. The log files are in this folder:  https://github.com/square/connect-api-examples/blob/master/my_app/v2/logs/"
 
-The Square Developer platform provides payment APIs and SDKs to add Square payments to your application. Whether buyers are paying on Square hardware or online, you can charge for a simple currency amount or a more complex order using Square-supported payment methods."
  
-This tells the new shared Agent (or new local session) that you don't want just any technical writing to be easier to understand, but the specific technical paragraph that you provided in the instructions. 
+This tells the new shared Agent (or new local session) what the context is for your debugging collaboration. The critical context that the shared Agent (or session) needs is the location of the application source code and the folder where log files are written. With this context, the teammate you are working with can ask Goose to clone the GitHub repo, open the project in an IDE, and build the project.  
 
 ### Agent setup activities
 When you work with Goose, it keeps track of everything you do together. Before sharing your setup with others, you should review this list of activities. Think of it like cleaning up your workspace before inviting colleagues over:
@@ -30,7 +29,7 @@ When you work with Goose, it keeps track of everything you do together. Before s
 * Pick only the activities that matter for your project
 * Remove any activities that aren't relevant for your teammates
 
-For example: If you used Goose for both writing documentation and analyzing data, but only want to share the writing part, you can remove the data analysis activities.
+For example: If you used Goose for both writing the application UI and helping you debug it, but only want to share the debugging part, you can remove the coding the application activities.
 
 <Tabs>
     <TabItem value="cli" label="Goose CLI" default>
