@@ -23,10 +23,19 @@ pub struct PermissionConfig {
     pub never_allow: Vec<String>,  // List of tools that are never allowed
 }
 
+/// Storage mechanism for permission configuration
+#[derive(Debug)]
+enum PermissionStorage {
+    File {
+        path: PathBuf,
+    },
+    Memory,
+}
+
 /// PermissionManager manages permission configurations for various tools.
 #[derive(Debug)]
 pub struct PermissionManager {
-    config_path: PathBuf, // Path to the permission configuration file
+    storage: PermissionStorage, // Storage mechanism for permissions (file or memory)
     permission_map: HashMap<String, PermissionConfig>, // Mapping of permission names to configurations
 }
 
@@ -37,6 +46,14 @@ const SMART_APPROVE_PERMISSION: &str = "smart_approve";
 /// Implements the default constructor for `PermissionManager`.
 impl Default for PermissionManager {
     fn default() -> Self {
+        // Check if we should use in-memory storage
+        if std::env::var("GOOSE_IN_MEMORY_CONFIG").is_ok() {
+            return PermissionManager {
+                storage: PermissionStorage::Memory,
+                permission_map: HashMap::new(),
+            };
+        }
+
         // Choose the app strategy and determine the config directory
         let config_dir = choose_app_strategy(APP_STRATEGY.clone())
             .expect("goose requires a home dir")
@@ -57,7 +74,7 @@ impl Default for PermissionManager {
         };
 
         PermissionManager {
-            config_path,
+            storage: PermissionStorage::File { path: config_path },
             permission_map,
         }
     }
@@ -66,21 +83,29 @@ impl Default for PermissionManager {
 impl PermissionManager {
     /// Creates a new `PermissionManager` with a specified config path.
     pub fn new<P: AsRef<Path>>(config_path: P) -> Self {
-        let config_path = config_path.as_ref().to_path_buf();
+        let path = config_path.as_ref().to_path_buf();
 
         // Load the existing configuration file or create an empty map if the file doesn't exist
-        let permission_map = if config_path.exists() {
+        let permission_map = if path.exists() {
             // Load the configuration file
             let file_contents =
-                fs::read_to_string(&config_path).expect("Failed to read permission.yaml");
+                fs::read_to_string(&path).expect("Failed to read permission.yaml");
             serde_yaml::from_str(&file_contents).unwrap_or_else(|_| HashMap::new())
         } else {
             HashMap::new() // No config file, create an empty map
         };
 
         PermissionManager {
-            config_path,
+            storage: PermissionStorage::File { path },
             permission_map,
+        }
+    }
+    
+    /// Creates a new in-memory `PermissionManager` with no persistence.
+    pub fn new_in_memory() -> Self {
+        PermissionManager {
+            storage: PermissionStorage::Memory,
+            permission_map: HashMap::new(),
         }
     }
 
@@ -165,10 +190,13 @@ impl PermissionManager {
                 .push(principal_name.to_string()),
         }
 
-        // Serialize the updated permission map and write it back to the config file
-        let yaml_content = serde_yaml::to_string(&self.permission_map)
-            .expect("Failed to serialize permission config");
-        fs::write(&self.config_path, yaml_content).expect("Failed to write to permission.yaml");
+        // Serialize the updated permission map and write it back to storage if using file-based storage
+        if let PermissionStorage::File { path } = &self.storage {
+            let yaml_content = serde_yaml::to_string(&self.permission_map)
+                .expect("Failed to serialize permission config");
+            fs::write(path, yaml_content).expect("Failed to write to permission.yaml");
+        }
+        // For in-memory storage, we don't need to do anything as the permission_map is already updated
     }
 
     /// Removes all entries where the principal name starts with the given extension name.
@@ -185,9 +213,13 @@ impl PermissionManager {
                 .retain(|p| !p.starts_with(extension_name));
         }
 
-        let yaml_content = serde_yaml::to_string(&self.permission_map)
-            .expect("Failed to serialize permission config");
-        fs::write(&self.config_path, yaml_content).expect("Failed to write to permission.yaml");
+        // Serialize the updated permission map and write it back to storage if using file-based storage
+        if let PermissionStorage::File { path } = &self.storage {
+            let yaml_content = serde_yaml::to_string(&self.permission_map)
+                .expect("Failed to serialize permission config");
+            fs::write(path, yaml_content).expect("Failed to write to permission.yaml");
+        }
+        // For in-memory storage, we don't need to do anything as the permission_map is already updated
     }
 }
 
@@ -201,6 +233,11 @@ mod tests {
         let temp_file = NamedTempFile::new().unwrap();
         let temp_path = temp_file.path();
         PermissionManager::new(temp_path)
+    }
+    
+    // Helper function to create an in-memory test instance
+    fn create_in_memory_permission_manager() -> PermissionManager {
+        PermissionManager::new_in_memory()
     }
 
     #[test]
@@ -304,5 +341,54 @@ mod tests {
         assert!(config
             .always_allow
             .contains(&"nonprefix__tool2".to_string()));
+    }
+    
+    #[test]
+    fn test_in_memory_permissions() {
+        let mut manager = create_in_memory_permission_manager();
+        
+        // Set permissions
+        manager.update_user_permission("tool1", PermissionLevel::AlwaysAllow);
+        manager.update_smart_approve_permission("tool2", PermissionLevel::NeverAllow);
+        
+        // Verify permissions are stored in memory
+        assert_eq!(
+            manager.get_user_permission("tool1"), 
+            Some(PermissionLevel::AlwaysAllow)
+        );
+        assert_eq!(
+            manager.get_smart_approve_permission("tool2"), 
+            Some(PermissionLevel::NeverAllow)
+        );
+        
+        // Update a permission
+        manager.update_user_permission("tool1", PermissionLevel::AskBefore);
+        
+        // Verify the update worked
+        assert_eq!(
+            manager.get_user_permission("tool1"), 
+            Some(PermissionLevel::AskBefore)
+        );
+    }
+    
+    #[test]
+    fn test_env_var_in_memory_permissions() {
+        // Set the environment variable
+        std::env::set_var("GOOSE_IN_MEMORY_CONFIG", "1");
+        
+        // Create a default permission manager (should use in-memory storage)
+        let mut manager = PermissionManager::default();
+        
+        // Set a permission
+        manager.update_user_permission("env_tool", PermissionLevel::AlwaysAllow);
+        
+        // Verify it works
+        assert_eq!(
+            manager.get_user_permission("env_tool"), 
+            Some(PermissionLevel::AlwaysAllow)
+        );
+        
+        // Clean up
+        std::env::remove_var("GOOSE_IN_MEMORY_CONFIG");
     }
 }

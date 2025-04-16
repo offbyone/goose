@@ -61,6 +61,7 @@ impl From<keyring::Error> for ConfigError {
 /// - YAML-based configuration file storage
 /// - Hot reloading of configuration changes
 /// - Secure secret storage in system keyring
+/// - Ephemeral in-memory configuration for temporary usage
 ///
 /// Configuration values are loaded with the following precedence:
 /// 1. Environment variables (exact key match)
@@ -71,6 +72,14 @@ impl From<keyring::Error> for ConfigError {
 /// 2. System keyring (which can be disabled with GOOSE_DISABLE_KEYRING)
 /// 3. If the keyring is disabled, secrets are stored in a secrets file
 ///    (~/.config/goose/secrets.yaml by default)
+///
+/// The system also supports ephemeral in-memory storage that does not write to disk.
+/// To use this mode, either:
+/// 1. Set the GOOSE_IN_MEMORY_CONFIG environment variable to any value (e.g., "1", "true")
+/// 2. Use the Config::new_in_memory() constructor programmatically
+///
+/// When using in-memory storage, all configuration and secrets are stored only in memory
+/// and will be lost when the program exits.
 ///
 /// # Examples
 ///
@@ -90,6 +99,10 @@ impl From<keyring::Error> for ConfigError {
 /// }
 ///
 /// let server_config: ServerConfig = config.get_param("server").unwrap();
+///
+/// // Create an ephemeral in-memory config
+/// let memory_config = Config::new_in_memory();
+/// memory_config.set_param("test", serde_json::json!("value"));
 /// ```
 ///
 /// # Naming Convention
@@ -98,21 +111,41 @@ impl From<keyring::Error> for ConfigError {
 /// environment variable OPENAI_API_KEY
 ///
 /// For Goose-specific configuration, consider prefixing with "goose_" to avoid conflicts.
+enum ConfigStorage {
+    File { path: PathBuf },
+    Memory,
+}
+
 pub struct Config {
-    config_path: PathBuf,
+    config_storage: ConfigStorage,
     secrets: SecretStorage,
 }
 
 enum SecretStorage {
     Keyring { service: String },
     File { path: PathBuf },
+    Memory,
 }
+
+// In-memory storage for configuration and secrets
+static CONFIG_VALUES: Lazy<std::sync::Mutex<HashMap<String, Value>>> =
+    Lazy::new(|| std::sync::Mutex::new(HashMap::new()));
+static SECRET_VALUES: Lazy<std::sync::Mutex<HashMap<String, Value>>> =
+    Lazy::new(|| std::sync::Mutex::new(HashMap::new()));
 
 // Global instance
 static GLOBAL_CONFIG: OnceCell<Config> = OnceCell::new();
 
 impl Default for Config {
     fn default() -> Self {
+        // Check if we should use in-memory storage
+        if env::var("GOOSE_IN_MEMORY_CONFIG").is_ok() {
+            return Config {
+                config_storage: ConfigStorage::Memory,
+                secrets: SecretStorage::Memory,
+            };
+        }
+
         // choose_app_strategy().config_dir()
         // - macOS/Linux: ~/.config/goose/
         // - Windows:     ~\AppData\Roaming\Block\goose\config\
@@ -123,6 +156,7 @@ impl Default for Config {
         std::fs::create_dir_all(&config_dir).expect("Failed to create config directory");
 
         let config_path = config_dir.join("config.yaml");
+        let config_storage = ConfigStorage::File { path: config_path };
 
         let secrets = match env::var("GOOSE_DISABLE_KEYRING") {
             Ok(_) => SecretStorage::File {
@@ -132,8 +166,9 @@ impl Default for Config {
                 service: KEYRING_SERVICE.to_string(),
             },
         };
+        
         Config {
-            config_path,
+            config_storage,
             secrets,
         }
     }
@@ -154,7 +189,9 @@ impl Config {
     /// to manage multiple configuration files.
     pub fn new<P: AsRef<Path>>(config_path: P, service: &str) -> Result<Self, ConfigError> {
         Ok(Config {
-            config_path: config_path.as_ref().to_path_buf(),
+            config_storage: ConfigStorage::File {
+                path: config_path.as_ref().to_path_buf(),
+            },
             secrets: SecretStorage::Keyring {
                 service: service.to_string(),
             },
@@ -170,61 +207,104 @@ impl Config {
         secrets_path: P2,
     ) -> Result<Self, ConfigError> {
         Ok(Config {
-            config_path: config_path.as_ref().to_path_buf(),
+            config_storage: ConfigStorage::File {
+                path: config_path.as_ref().to_path_buf(),
+            },
             secrets: SecretStorage::File {
                 path: secrets_path.as_ref().to_path_buf(),
             },
         })
     }
-
-    /// Check if this config already exists
-    pub fn exists(&self) -> bool {
-        self.config_path.exists()
+    
+    /// Create a new in-memory configuration instance
+    ///
+    /// This is useful for ephemeral runs or testing where no persistent storage is needed.
+    pub fn new_in_memory() -> Self {
+        Config {
+            config_storage: ConfigStorage::Memory,
+            secrets: SecretStorage::Memory,
+        }
     }
 
     /// Check if this config already exists
+    pub fn exists(&self) -> bool {
+        match &self.config_storage {
+            ConfigStorage::File { path } => path.exists(),
+            ConfigStorage::Memory => true, // In-memory configuration always "exists"
+        }
+    }
+
+    /// Clear this configuration
     pub fn clear(&self) -> Result<(), ConfigError> {
-        Ok(std::fs::remove_file(&self.config_path)?)
+        match &self.config_storage {
+            ConfigStorage::File { path } => Ok(std::fs::remove_file(path)?),
+            ConfigStorage::Memory => {
+                // Clear in-memory configuration
+                CONFIG_VALUES.lock().unwrap().clear();
+                Ok(())
+            }
+        }
     }
 
     /// Get the path to the configuration file
     pub fn path(&self) -> String {
-        self.config_path.to_string_lossy().to_string()
+        match &self.config_storage {
+            ConfigStorage::File { path } => path.to_string_lossy().to_string(),
+            ConfigStorage::Memory => "<in-memory>".to_string(),
+        }
     }
 
-    // Load current values from the config file
+    // Load current values from storage
     pub fn load_values(&self) -> Result<HashMap<String, Value>, ConfigError> {
-        if self.config_path.exists() {
-            let file_content = std::fs::read_to_string(&self.config_path)?;
-            // Parse YAML into JSON Value for consistent internal representation
-            let yaml_value: serde_yaml::Value = serde_yaml::from_str(&file_content)?;
-            let json_value: Value = serde_json::to_value(yaml_value)?;
+        match &self.config_storage {
+            ConfigStorage::File { path } => {
+                if path.exists() {
+                    let file_content = std::fs::read_to_string(path)?;
+                    // Parse YAML into JSON Value for consistent internal representation
+                    let yaml_value: serde_yaml::Value = serde_yaml::from_str(&file_content)?;
+                    let json_value: Value = serde_json::to_value(yaml_value)?;
 
-            match json_value {
-                Value::Object(map) => Ok(map.into_iter().collect()),
-                _ => Ok(HashMap::new()),
+                    match json_value {
+                        Value::Object(map) => Ok(map.into_iter().collect()),
+                        _ => Ok(HashMap::new()),
+                    }
+                } else {
+                    Ok(HashMap::new())
+                }
+            },
+            ConfigStorage::Memory => {
+                // Return a clone of the in-memory values
+                Ok(CONFIG_VALUES.lock().unwrap().clone())
             }
-        } else {
-            Ok(HashMap::new())
         }
     }
 
-    // Save current values to the config file
+    // Save current values to storage
     pub fn save_values(&self, values: HashMap<String, Value>) -> Result<(), ConfigError> {
-        // Convert to YAML for storage
-        let yaml_value = serde_yaml::to_string(&values)?;
+        match &self.config_storage {
+            ConfigStorage::File { path } => {
+                // Convert to YAML for storage
+                let yaml_value = serde_yaml::to_string(&values)?;
 
-        // Ensure the directory exists
-        if let Some(parent) = self.config_path.parent() {
-            std::fs::create_dir_all(parent)
-                .map_err(|e| ConfigError::DirectoryError(e.to_string()))?;
+                // Ensure the directory exists
+                if let Some(parent) = path.parent() {
+                    std::fs::create_dir_all(parent)
+                        .map_err(|e| ConfigError::DirectoryError(e.to_string()))?;
+                }
+
+                std::fs::write(path, yaml_value)?;
+                Ok(())
+            },
+            ConfigStorage::Memory => {
+                // Store in memory
+                let mut config_values = CONFIG_VALUES.lock().unwrap();
+                *config_values = values;
+                Ok(())
+            }
         }
-
-        std::fs::write(&self.config_path, yaml_value)?;
-        Ok(())
     }
 
-    // Load current secrets from the keyring
+    // Load current secrets from storage
     pub fn load_secrets(&self) -> Result<HashMap<String, Value>, ConfigError> {
         match &self.secrets {
             SecretStorage::Keyring { service } => {
@@ -251,6 +331,10 @@ impl Config {
                 } else {
                     Ok(HashMap::new())
                 }
+            }
+            SecretStorage::Memory => {
+                // Return a clone of the in-memory secret values
+                Ok(SECRET_VALUES.lock().unwrap().clone())
             }
         }
     }
@@ -380,7 +464,7 @@ impl Config {
             .and_then(|v| Ok(serde_json::from_value(v.clone())?))
     }
 
-    /// Set a secret value in the system keyring.
+    /// Set a secret value in the appropriate storage.
     ///
     /// This will store the value in a single JSON object in the system keyring,
     /// alongside any other secrets. The value can be any type that can be
@@ -408,13 +492,18 @@ impl Config {
                 let yaml_value = serde_yaml::to_string(&values)?;
                 std::fs::write(path, yaml_value)?;
             }
+            SecretStorage::Memory => {
+                // Store in memory
+                let mut secret_values = SECRET_VALUES.lock().unwrap();
+                *secret_values = values;
+            }
         };
         Ok(())
     }
 
-    /// Delete a secret from the system keyring.
+    /// Delete a secret from storage.
     ///
-    /// This will remove the specified key from the JSON object in the system keyring.
+    /// This will remove the specified key from storage.
     /// Other secrets will remain unchanged.
     ///
     /// # Errors
@@ -436,6 +525,11 @@ impl Config {
                 let yaml_value = serde_yaml::to_string(&values)?;
                 std::fs::write(path, yaml_value)?;
             }
+            SecretStorage::Memory => {
+                // Update in-memory storage
+                let mut secret_values = SECRET_VALUES.lock().unwrap();
+                *secret_values = values;
+            }
         };
         Ok(())
     }
@@ -454,6 +548,56 @@ mod tests {
             Err(keyring::Error::NoEntry) => Ok(()),
             Err(e) => Err(ConfigError::KeyringError(e.to_string())),
         }
+    }
+    
+    #[test]
+    fn test_in_memory_config() -> Result<(), ConfigError> {
+        // Create in-memory config
+        let config = Config::new_in_memory();
+        
+        // Set and get a value
+        config.set_param("key", Value::String("value".to_string()))?;
+        let value: String = config.get_param("key")?;
+        assert_eq!(value, "value");
+        
+        // Test setting and getting a secret
+        config.set_secret("secret_key", Value::String("secret_value".to_string()))?;
+        let secret: String = config.get_secret("secret_key")?;
+        assert_eq!(secret, "secret_value");
+        
+        // Test that deletion works
+        config.delete("key")?;
+        let result: Result<String, ConfigError> = config.get_param("key");
+        assert!(matches!(result, Err(ConfigError::NotFound(_))));
+        
+        // Test that secret deletion works
+        config.delete_secret("secret_key")?;
+        let result: Result<String, ConfigError> = config.get_secret("secret_key");
+        assert!(matches!(result, Err(ConfigError::NotFound(_))));
+        
+        Ok(())
+    }
+    
+    #[test]
+    fn test_env_var_in_memory_config() -> Result<(), ConfigError> {
+        // Set the environment variable
+        std::env::set_var("GOOSE_IN_MEMORY_CONFIG", "1");
+        
+        // Create config using default constructor - should use in-memory storage
+        let config = Config::default();
+        
+        // Verify that the path shows it's in-memory
+        assert_eq!(config.path(), "<in-memory>");
+        
+        // Test that we can set and get values
+        config.set_param("env_test", Value::String("env_value".to_string()))?;
+        let value: String = config.get_param("env_test")?;
+        assert_eq!(value, "env_value");
+        
+        // Clean up
+        std::env::remove_var("GOOSE_IN_MEMORY_CONFIG");
+        
+        Ok(())
     }
 
     #[test]
