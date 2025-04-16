@@ -13,7 +13,17 @@ A shared session in Goose is like a collaborative workspace where multiple peopl
 When you create an Agent to be shared, you are creating a host Agent. When your host terminates, the shared Agents are disconnected and collaborators can no longer see activity in the host.
 <Tabs>
     <TabItem value="cli" label="Goose CLI" default>
-        The Goose CLI can generate a "recipe" which encapsulates all of the components to be shared with another Goose user. To share an agent, first create a recipe file.
+        To create a shared Agent using the CLI, you need a recipe. Think of a Goose "recipe" like a blueprint - it contains the instructions to recreate your agent for someone else. Here's what you need to know:
+
+        * A recipe is different from sharing a live agent session
+        * The recipe tells Goose how to build a copy of your agent
+        * It includes things like:
+           * Instructions for how the agent should behave
+           * What activities the agent can do
+
+        When you use the Goose desktop app to share an agent, it shows you a window where you can review and customize these settings before creating the recipe. With the CLI, the `/recipe` command creates a .yaml file that you can edit to customize the shared Agent that you want to create. 
+
+        Note: This is like sharing a cooking recipe with a friend - you're not giving them your actual meal, but the instructions to make the same thing themselves!
 
         In your terminal with a Goose session running, input the following:
         ```sh
@@ -118,7 +128,7 @@ When you create an Agent to be shared, you are creating a host Agent. When your 
 
         Open a new tab on your browser and paste the shared Agent URL into the address bar and press the **enter** key on your keyboard. The browser requests your permission to start a new Goose session with the shared components. 
 
-        The new Goose session shows a set of actions that you can take as clickable buttons. As shown in the following image, the shared Agent is shown as an action that summarizes the purpose of the shared Agent. To activate the agent, review the summary and then select the action.  
+        The new Goose session shows a set of activities that you can run. Any prompts that you give the Agent are processed in the context provided by the recipe created by the hosting user.    
 
   
     </TabItem>
@@ -183,7 +193,7 @@ Files created during a session are meant to be accessible to all participants. H
 
 
 ## What gets shared?
-You may have started a project in a Goose session that needed information that your collaborating team member needs in the shared agent that you create. At the same time, you may have needed to give Goose information that you'd rather not share. 
+You might start a project in a Goose session and realize your teammate needs access to that context through a shared agent. But at the same time, you may have shared things with Goose that you’d rather keep private.
 ### Shared components
 The shared agent includes these components:
 * Conversation history (all messages)
