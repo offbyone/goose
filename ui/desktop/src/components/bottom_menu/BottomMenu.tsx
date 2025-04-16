@@ -51,6 +51,8 @@ export default function BottomMenu({
         // Find the model's token limit
         const modelConfig = currentProvider.metadata.known_models.find((m) => m.name === model);
         if (modelConfig?.context_limit) {
+          console.log('Model token limit: ', modelConfig.context_limit);
+          // setTokenLimit(modelConfig.context_limit);
           setTokenLimit(2000);
         }
       }
