@@ -14,7 +14,7 @@ import { useConfig } from '../ConfigContext';
 import { getCurrentModelAndProvider } from '../settings_v2/models/index';
 
 const TOKEN_WARNING_THRESHOLD = 0.8;
-const SUGGESTED_MAX_TOOLS = 25;
+const SUGGESTED_MAX_TOOLS = 20;
 
 export default function BottomMenu({
   hasMessages,
@@ -51,7 +51,7 @@ export default function BottomMenu({
         // Find the model's token limit
         const modelConfig = currentProvider.metadata.known_models.find((m) => m.name === model);
         if (modelConfig?.context_limit) {
-          setTokenLimit(modelConfig.context_limit);
+          setTokenLimit(2000);
         }
       }
     } catch (err) {
@@ -76,6 +76,9 @@ export default function BottomMenu({
 
     clearAlerts();
 
+    console.log('tokenLimit: ', tokenLimit);
+    console.log('numTokens: ', numTokens);
+
     // Add token alerts if we have a token limit
     if (tokenLimit && numTokens > 0) {
       if (numTokens >= tokenLimit) {
@@ -91,6 +94,7 @@ export default function BottomMenu({
       }
     }
 
+    console.log('toolCount: ', toolCount);
     // Add tool count alert if we have the data
     if (toolCount !== null && toolCount > SUGGESTED_MAX_TOOLS) {
       addAlert(
