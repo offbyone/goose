@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::time::Duration;
 
-use super::base::{ConfigKey, ModelInfo, Provider, ProviderMetadata, ProviderUsage, Usage};
+use super::base::{ConfigKey, Provider, ProviderMetadata, ProviderUsage, Usage};
 use super::errors::ProviderError;
 use super::formats::databricks::{create_request, get_usage, response_to_message};
 use super::oauth;
@@ -52,7 +52,7 @@ impl DatabricksAuth {
             host,
             client_id: DEFAULT_CLIENT_ID.to_string(),
             redirect_url: DEFAULT_REDIRECT_URL.to_string(),
-            scopes: DEFAULT_SCOPES.iter().map(|&s| s.to_string()).collect(),
+            scopes: DEFAULT_SCOPES.iter().map(|s| s.to_string()).collect(),
         }
     }
     pub fn token(token: String) -> Self {
@@ -224,13 +224,7 @@ impl Provider for DatabricksProvider {
             "Databricks",
             "Models on Databricks AI Gateway",
             DATABRICKS_DEFAULT_MODEL,
-            DATABRICKS_KNOWN_MODELS
-                .iter()
-                .map(|&s| ModelInfo {
-                    name: s.to_string(),
-                    context_limit: ModelConfig::new(s.to_string()).context_limit(),
-                })
-                .collect(),
+            DATABRICKS_KNOWN_MODELS.to_vec(),
             DATABRICKS_DOC_URL,
             vec![
                 ConfigKey::new("DATABRICKS_HOST", true, false, None),

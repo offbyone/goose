@@ -1,4 +1,4 @@
-use super::base::{ConfigKey, ModelInfo, Provider, ProviderMetadata, ProviderUsage, Usage};
+use super::base::{ConfigKey, Provider, ProviderMetadata, ProviderUsage, Usage};
 use super::errors::ProviderError;
 use super::utils::{get_model, handle_response_openai_compat};
 use crate::message::Message;
@@ -102,7 +102,7 @@ impl Provider for OllamaProvider {
             "Ollama",
             "Local open source models",
             OLLAMA_DEFAULT_MODEL,
-            OLLAMA_KNOWN_MODELS.iter().map(|&s| ModelInfo { name: s.to_string(), context_limit: ModelConfig::new(s.to_string()).context_limit() }).collect(),
+            OLLAMA_KNOWN_MODELS.to_vec(),
             OLLAMA_DOC_URL,
             vec![ConfigKey::new(
                 "OLLAMA_HOST",

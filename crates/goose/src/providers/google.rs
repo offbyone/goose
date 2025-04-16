@@ -1,7 +1,7 @@
 use super::errors::ProviderError;
 use crate::message::Message;
 use crate::model::ModelConfig;
-use crate::providers::base::{ConfigKey, ModelInfo, Provider, ProviderMetadata, ProviderUsage};
+use crate::providers::base::{ConfigKey, Provider, ProviderMetadata, ProviderUsage};
 use crate::providers::formats::google::{create_request, get_usage, response_to_message};
 use crate::providers::utils::{
     emit_debug_trace, handle_response_google_compat, unescape_json_values,
@@ -133,7 +133,7 @@ impl Provider for GoogleProvider {
             "Google Gemini",
             "Gemini models from Google AI",
             GOOGLE_DEFAULT_MODEL,
-            GOOGLE_KNOWN_MODELS.iter().map(|&s| ModelInfo { name: s.to_string(), context_limit: ModelConfig::new(s.to_string()).context_limit() }).collect(),
+            GOOGLE_KNOWN_MODELS.to_vec(),
             GOOGLE_DOC_URL,
             vec![
                 ConfigKey::new("GOOGLE_API_KEY", true, true, None),

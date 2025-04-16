@@ -42,7 +42,7 @@ impl ProviderMetadata {
         display_name: &str,
         description: &str,
         default_model: &str,
-        known_models: Vec<ModelInfo>,
+        model_names: Vec<&str>,
         model_doc_link: &str,
         config_keys: Vec<ConfigKey>,
     ) -> Self {
@@ -51,7 +51,10 @@ impl ProviderMetadata {
             display_name: display_name.to_string(),
             description: description.to_string(),
             default_model: default_model.to_string(),
-            known_models,
+            known_models: model_names.iter().map(|&name| ModelInfo {
+                name: name.to_string(),
+                context_limit: ModelConfig::new(name.to_string()).context_limit(),
+            }).collect(),
             model_doc_link: model_doc_link.to_string(),
             config_keys,
         }

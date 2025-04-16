@@ -10,7 +10,7 @@ use mcp_core::Tool;
 use serde_json::Value;
 use tokio::time::sleep;
 
-use super::base::{ConfigKey, ModelInfo, Provider, ProviderMetadata, ProviderUsage};
+use super::base::{ConfigKey, Provider, ProviderMetadata, ProviderUsage};
 use super::errors::ProviderError;
 use crate::message::Message;
 use crate::model::ModelConfig;
@@ -85,13 +85,7 @@ impl Provider for BedrockProvider {
             "Amazon Bedrock",
             "Run models through Amazon Bedrock. You may have to set 'AWS_' environment variables to configure authentication.",
             BEDROCK_DEFAULT_MODEL,
-            BEDROCK_KNOWN_MODELS
-                .iter()
-                .map(|&s| ModelInfo {
-                    name: s.to_string(),
-                    context_limit: ModelConfig::new(s.to_string()).context_limit(),
-                })
-                .collect(),
+            BEDROCK_KNOWN_MODELS.to_vec(),
             BEDROCK_DOC_LINK,
             vec![ConfigKey::new("AWS_PROFILE", true, false, Some("default"))],
         )
